@@ -4,7 +4,7 @@ import LogViewer from './components/LogViewer.vue';
 
 const routes = [
   { path: '/', component: App },
-  { path: '/logs', component: LogViewer },
+  { path: '/krystal', component: LogViewer },
 ];
 
 const router = createRouter({
