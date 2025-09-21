@@ -180,6 +180,14 @@ export default {
       this.currentPage = 1;
       this.fetchLogs(true);
     },
+    activeTab(newTab, oldTab) {
+      // Clear polling interval when leaving the logs tab
+      if (oldTab === 'logs' && this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = null;
+      }
+      this.loadDataForCurrentTab();
+    }
   },
   mounted() {
     this.fetchUniqueIps();
@@ -193,20 +201,23 @@ export default {
       this.loadDataForCurrentTab();
     },
     loadDataForCurrentTab() {
-      // Reset common states
       this.error = null;
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
+      
+      // Stop any existing polling before switching
+      if (this.pollingInterval) {
+        clearInterval(this.pollingInterval);
+        this.pollingInterval = null;
+      }
 
       if (this.activeTab === 'overall') {
         this.fetchOverallAnalysis();
       } else if (this.activeTab === 'user') {
-        // Data is fetched when user selects an IP
         if (this.ipFilter) {
           this.fetchUserAnalysis(this.ipFilter);
         }
       } else if (this.activeTab === 'logs') {
         this.fetchLogs(true);
+        // Only start polling if we are on the logs tab
         this.pollingInterval = setInterval(() => this.fetchLogs(false), 5000);
       }
     },
