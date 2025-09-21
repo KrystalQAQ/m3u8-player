@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import Player from './components/Player.vue';
 import { Parser } from 'm3u8-parser';
 import { ElMessage } from 'element-plus';
@@ -26,8 +26,21 @@ const paginatedPlaylist = computed(() => {
   return filteredPlaylist.value.slice(start, end);
 });
 
+onMounted(() => {
+  const savedPlaylist = localStorage.getItem('m3u8-playlist');
+  if (savedPlaylist) {
+    try {
+      fullPlaylist.value = JSON.parse(savedPlaylist);
+    } catch (e) {
+      console.error("Failed to parse saved playlist", e);
+      localStorage.removeItem('m3u8-playlist');
+    }
+  }
+});
+
 function playVideo() {
   fullPlaylist.value = [];
+  localStorage.removeItem('m3u8-playlist'); // Clear history when playing a new URL
   videoSrc.value = m3u8Url.value;
 }
 
@@ -61,6 +74,7 @@ function handleFile(file) {
 
       if (items.length > 0) {
         fullPlaylist.value = items;
+        localStorage.setItem('m3u8-playlist', JSON.stringify(items));
         videoSrc.value = '';
         currentPage.value = 1;
       } else {

@@ -21,6 +21,7 @@ onMounted(() => {
   if (playerContainer.value) {
     dp = new DPlayer({
       container: playerContainer.value,
+      autoplay: true, // Add autoplay option
       video: {
         url: props.src,
         type: 'customHls',
@@ -29,6 +30,10 @@ onMounted(() => {
             const hls = new Hls();
             hls.loadSource(video.src);
             hls.attachMedia(video);
+            // Ensure play is called after hls is attached
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+              player.play();
+            });
           },
         },
       },
@@ -48,11 +53,10 @@ watch(() => props.src, (newSrc) => {
       url: newSrc,
       type: 'customHls',
     });
-    // DPlayer's switchVideo might not re-trigger the custom type handler correctly.
-    // A more robust way is to destroy and re-create the player.
-    // However, for simplicity, we'll try switching first. If issues persist,
-    // re-creation is the next step.
-    dp.play();
+    // After switching, we need to ensure it plays. A small delay can help.
+    setTimeout(() => {
+      dp.play();
+    }, 100);
   }
 });
 </script>
