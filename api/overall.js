@@ -25,9 +25,9 @@ export default async function handler(req, res) {
       throw error;
     }
 
-    // The RPC function returns a single JSON object within an array
-    if (data && data.length > 0) {
-      res.status(200).json(data[0]);
+    // The RPC function returns a single JSON object.
+    if (data) {
+      res.status(200).json(data);
     } else {
       throw new Error('No analysis data returned from the database function.');
     }
