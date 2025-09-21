@@ -36,6 +36,7 @@ onMounted(() => {
     dp = new DPlayer({
       container: playerContainer.value,
       autoplay: true,
+      pip: true,
       video: {
         url: props.src,
         type: 'customHls',
