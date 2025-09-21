@@ -7,34 +7,63 @@
         <el-option v-for="ip in uniqueIps" :key="ip" :label="ip" :value="ip" />
       </el-select>
     </div>
+
+    <!-- User Analysis Panel -->
+    <div v-if="ipFilter && analysis" class="analysis-panel">
+      <el-row :gutter="20">
+        <el-col :span="8">
+          <el-card shadow="hover">
+            <div class="stat-title">日志总数</div>
+            <div class="stat-value">{{ analysis.totalLogs }}</div>
+          </el-card>
+        </el-col>
+        <el-col :span="8">
+          <el-card shadow="hover">
+            <div class="stat-title">全站活跃度排名</div>
+            <div class="stat-value">#{{ analysis.rank }}</div>
+          </el-card>
+        </el-col>
+        <el-col :span="8">
+          <el-card shadow="hover">
+            <div class="stat-title">最常观看视频</div>
+            <div class="stat-value">{{ analysis.favoriteVideo || 'N/A' }}</div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+
     <div v-if="error" class="error-message">
       <el-alert :title="error" type="error" show-icon :closable="false" />
     </div>
     <div v-if="loading" v-loading="loading" class="loading-spinner"></div>
-    <el-table v-if="!loading && logs?.length > 0" :data="logs" stripe border style="width: 100%">
-      <el-table-column prop="created_at" label="Timestamp" width="180">
-        <template #default="scope">
-          {{ new Date(scope.row.created_at).toLocaleString() }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="event" label="Event" width="120" />
-      <el-table-column prop="ip" label="IP Address" width="150" />
-      <el-table-column prop="video_title" label="video_title" />
-      <el-table-column prop="current_time" label="Current Time" width="120" />
 
-      <el-table-column label="Actions" width="120">
-        <template #default="scope">
-          <el-button size="small" @click="viewInPlayer(scope.row)">View</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div v-if="!loading && logs?.length === 0 && attempted" class="no-logs-message">
-      <el-empty description="No logs found."></el-empty>
-    </div>
-    <div v-if="!loading && total > 0" class="pagination-container">
-      <el-pagination :current-page="currentPage" :page-sizes="[10, 20, 50, 100]" :page-size="pageSize" :total="total"
-        layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange"
-        @current-change="handlePageChange" />
+    <!-- Log Table (shown only when no IP is selected for analysis) -->
+    <div v-if="!ipFilter">
+      <el-table v-if="!loading && logs?.length > 0" :data="logs" stripe border style="width: 100%">
+        <el-table-column prop="created_at" label="Timestamp" width="180">
+          <template #default="scope">
+            {{ new Date(scope.row.created_at).toLocaleString() }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="event" label="Event" width="120" />
+        <el-table-column prop="ip" label="IP Address" width="150" />
+        <el-table-column prop="video_title" label="video_title" />
+        <el-table-column prop="current_time" label="Current Time" width="120" />
+
+        <el-table-column label="Actions" width="120">
+          <template #default="scope">
+            <el-button size="small" @click="viewInPlayer(scope.row)">View</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-if="!loading && logs?.length === 0 && attempted" class="no-logs-message">
+        <el-empty description="No logs found."></el-empty>
+      </div>
+      <div v-if="!loading && total > 0" class="pagination-container">
+        <el-pagination :current-page="currentPage" :page-sizes="[10, 20, 50, 100]" :page-size="pageSize" :total="total"
+          layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange"
+          @current-change="handlePageChange" />
+      </div>
     </div>
     <el-dialog v-model="dialogVisible" :title="previewTitle" width="60%" @close="dialogVisible = false">
       <Player v-if="dialogVisible" :src="previewSrc" :start-time="previewTime" :title="previewTitle"
@@ -68,13 +97,23 @@ export default {
       ipFilter: '',
       pollingInterval: null,
       uniqueIps: [],
+      analysis: null, // To store user analysis data
     };
   },
   computed: {},
   watch: {
-    ipFilter() {
-      this.currentPage = 1;
-      this.fetchLogs(true);
+    ipFilter(newIp) {
+      if (newIp) {
+        // An IP is selected, fetch analysis data
+        this.fetchUserAnalysis(newIp);
+        this.logs = []; // Clear logs table
+        this.total = 0;
+      } else {
+        // IP filter is cleared, fetch logs
+        this.analysis = null;
+        this.currentPage = 1;
+        this.fetchLogs(true);
+      }
     },
   },
   mounted() {
@@ -160,6 +199,35 @@ export default {
       this.previewTitle = row.video_title || 'Video Preview';
       this.dialogVisible = true;
     },
+    async fetchUserAnalysis(ip) {
+      this.loading = true;
+      this.error = null;
+      this.analysis = null;
+      const password = this.$route.query.pd;
+
+      if (!password) {
+        this.error = 'Password is required for analysis.';
+        this.loading = false;
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams({
+          pd: password,
+          ip: ip,
+        });
+        const response = await fetch(`/api/analyze?${params.toString()}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch user analysis');
+        }
+        this.analysis = await response.json();
+      } catch (err) {
+        this.error = err.message;
+      } finally {
+        this.loading = false;
+      }
+    },
   },
 };
 </script>
@@ -201,5 +269,24 @@ export default {
 .controls {
   text-align: center;
   margin-bottom: 20px;
+}
+
+.analysis-panel {
+  margin-bottom: 24px;
+}
+
+.stat-title {
+  color: #909399;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
