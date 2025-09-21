@@ -61,10 +61,14 @@ onMounted(() => {
         emit('timeupdate', dp.video.currentTime);
         const now = Date.now();
         if (now - lastLogTime > 60000) { // Log every 60 seconds
-          logPlayerData('timeupdate');
+          // logPlayerData('timeupdate');
           lastLogTime = now;
         }
       }
+    });
+
+    dp.on('seeking', () => {
+      logPlayerData('seeking');
     });
 
     const logPlayerData = (event) => {

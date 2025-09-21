@@ -80,17 +80,31 @@ export default async (req, res) => {
     }
 
     try {
-      const { data, error } = await supabase
+      const page = parseInt(requestUrl.searchParams.get('page') || '1', 10);
+      const pageSize = parseInt(requestUrl.searchParams.get('pageSize') || '20', 10);
+      const ipFilter = requestUrl.searchParams.get('ip');
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      let query = supabase
         .from('logs')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (ipFilter) {
+        query = query.ilike('ip', `%${ipFilter}%`);
+      }
+
+      const { data, error, count } = await query;
 
       if (error) {
         console.error('Supabase error:', error);
         return res.status(500).json({ error: 'Failed to fetch logs', details: error.message });
       }
 
-      return res.status(200).json(data);
+      return res.status(200).json({ data, count });
     } catch (error) {
       console.error('Error fetching logs:', error);
       return res.status(500).json({ error: 'Internal Server Error', details: error.message });

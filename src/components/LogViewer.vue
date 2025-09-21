@@ -2,7 +2,8 @@
   <div class="log-viewer-container">
     <h1 class="title">Log Viewer</h1>
     <div class="controls">
-      <el-select v-model="ipFilter" placeholder="Filter by IP Address" clearable style="width: 240px; margin-right: 10px;">
+      <el-select v-model="ipFilter" placeholder="Filter by IP Address" clearable
+        style="width: 240px; margin-right: 10px;">
         <el-option v-for="ip in uniqueIps" :key="ip" :label="ip" :value="ip" />
       </el-select>
     </div>
@@ -10,7 +11,7 @@
       <el-alert :title="error" type="error" show-icon :closable="false" />
     </div>
     <div v-if="loading" v-loading="loading" class="loading-spinner"></div>
-    <el-table v-if="!loading && pagedLogs?.length > 0" :data="pagedLogs" stripe border style="width: 100%">
+    <el-table v-if="!loading && logs?.length > 0" :data="logs" stripe border style="width: 100%">
       <el-table-column prop="created_at" label="Timestamp" width="180">
         <template #default="scope">
           {{ new Date(scope.row.created_at).toLocaleString() }}
@@ -18,9 +19,9 @@
       </el-table-column>
       <el-table-column prop="event" label="Event" width="120" />
       <el-table-column prop="ip" label="IP Address" width="150" />
-      <el-table-column prop="video_src" label="Video Src" />
-      <el-table-column prop="current_time" label="Current Time" width="120" />
       <el-table-column prop="video_title" label="video_title" />
+      <el-table-column prop="current_time" label="Current Time" width="120" />
+
       <el-table-column label="Actions" width="120">
         <template #default="scope">
           <el-button size="small" @click="viewInPlayer(scope.row)">View</el-button>
@@ -35,8 +36,8 @@
         layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange"
         @current-change="handlePageChange" />
     </div>
-    <el-dialog v-model="dialogVisible" title="Video Preview" width="60%" @close="dialogVisible = false">
-      <Player v-if="dialogVisible" :src="previewSrc" :start-time="previewTime" />
+    <el-dialog v-model="dialogVisible" :title="previewTitle" width="60%" @close="dialogVisible = false">
+      <Player v-if="dialogVisible" :src="previewSrc" :start-time="previewTime" :title="previewTitle" />
     </el-dialog>
   </div>
 </template>
@@ -62,45 +63,35 @@ export default {
       dialogVisible: false,
       previewSrc: '',
       previewTime: 0,
+      previewTitle: 'Video Preview',
       ipFilter: '',
-      // uniqueIps: [],
+      pollingInterval: null,
+      uniqueIps: [],
     };
   },
-  computed: {
-    uniqueIps() {
-      const ips = new Set(this.logs.map(log => log.ip));
-      return Array.from(ips).sort();
-    },
-    filteredLogs() {
-      if (!this.ipFilter) {
-        return this.logs;
-      }
-      return this.logs.filter(log => log.ip.includes(this.ipFilter));
-    },
-    pagedLogs() {
-      const start = (this.currentPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
-      return this.filteredLogs.slice(start, end);
-    },
-  },
+  computed: {},
   watch: {
-    filteredLogs: {
-      handler(newLogs) {
-        this.total = newLogs.length;
-        this.currentPage = 1; // Reset to first page when filter changes
-      },
-      immediate: true,
+    ipFilter() {
+      this.currentPage = 1;
+      this.fetchLogs(true);
     },
   },
   mounted() {
-    this.fetchLogs();
+    this.fetchLogs(true); // Initial fetch with loading indicator
+    this.fetchUniqueIps();
+    // Polling will refetch the current page
+    this.pollingInterval = setInterval(() => this.fetchLogs(false), 5000);
+  },
+  beforeUnmount() {
+    clearInterval(this.pollingInterval);
   },
   methods: {
-    async fetchLogs() {
-      this.loading = true;
+    async fetchLogs(isInitialLoad = false) {
+      if (isInitialLoad) {
+        this.loading = true;
+      }
       this.error = null;
       this.attempted = true;
-      this.logs = [];
 
       const password = this.$route.query.pd;
 
@@ -111,34 +102,61 @@ export default {
       }
 
       try {
-        const response = await fetch(
-          `/api/log?pd=${encodeURIComponent(password)}`
-        );
+        const params = new URLSearchParams({
+          pd: password,
+          page: this.currentPage,
+          pageSize: this.pageSize,
+        });
+        if (this.ipFilter) {
+          params.append('ip', this.ipFilter);
+        }
+
+        const response = await fetch(`/api/log?${params.toString()}`);
 
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch logs');
         }
 
-        const data = await response.json();
+        const { data, count } = await response.json();
         this.logs = data;
-        this.total = data.length;
+        this.total = count;
       } catch (err) {
         this.error = err.message;
       } finally {
-        this.loading = false;
+        if (isInitialLoad) {
+          this.loading = false;
+        }
       }
     },
     handlePageChange(newPage) {
       this.currentPage = newPage;
+      this.fetchLogs();
     },
     handleSizeChange(newSize) {
       this.pageSize = newSize;
       this.currentPage = 1; // Reset to first page
+      this.fetchLogs();
+    },
+    async fetchUniqueIps() {
+      const password = this.$route.query.pd;
+      if (!password) return;
+
+      try {
+        const response = await fetch(`/api/ips?pd=${encodeURIComponent(password)}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch unique IPs');
+        }
+        this.uniqueIps = await response.json();
+      } catch (err) {
+        console.error('Error fetching unique IPs:', err);
+        // Silently fail, as this is not critical for the main functionality
+      }
     },
     viewInPlayer(row) {
       this.previewSrc = row.video_src;
       this.previewTime = row.current_time;
+      this.previewTitle = row.video_title || 'Video Preview';
       this.dialogVisible = true;
     },
   },
