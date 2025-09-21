@@ -3,13 +3,15 @@ import { ref, computed, onMounted } from 'vue';
 import Player from './components/Player.vue';
 import { Parser } from 'm3u8-parser';
 import { ElMessage } from 'element-plus';
+import { savePlaylist, loadPlaylist, clearPlaylist } from './db';
 
 const m3u8Url = ref('');
 const videoSrc = ref('');
 const fullPlaylist = ref([]);
 const searchQuery = ref('');
 const currentPage = ref(1);
-const pageSize = ref(15); // Increase page size for better use of space
+const pageSize = ref(15);
+const currentPlaying = ref(null); // To track the currently playing item
 
 const filteredPlaylist = computed(() => {
   if (!searchQuery.value) {
@@ -26,32 +28,29 @@ const paginatedPlaylist = computed(() => {
   return filteredPlaylist.value.slice(start, end);
 });
 
-onMounted(() => {
-  const savedPlaylist = localStorage.getItem('m3u8-playlist');
+onMounted(async () => {
+  const savedPlaylist = await loadPlaylist();
   if (savedPlaylist) {
-    try {
-      fullPlaylist.value = JSON.parse(savedPlaylist);
-    } catch (e) {
-      console.error("Failed to parse saved playlist", e);
-      localStorage.removeItem('m3u8-playlist');
-    }
+    fullPlaylist.value = savedPlaylist;
   }
 });
 
-function playVideo() {
+async function playVideo() {
   fullPlaylist.value = [];
-  localStorage.removeItem('m3u8-playlist'); // Clear history when playing a new URL
+  await clearPlaylist();
+  currentPlaying.value = null;
   videoSrc.value = m3u8Url.value;
 }
 
 function playFromPlaylist(item) {
   videoSrc.value = item.uri;
+  currentPlaying.value = item;
 }
 
-function handleFile(file) {
+async function handleFile(file) {
   if (file && (file.name.endsWith('.m3u8') || file.type === 'application/vnd.apple.mpegurl' || file.name.endsWith('.m3u'))) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const content = e.target.result;
       const parser = new Parser();
       parser.push(content);
@@ -74,13 +73,14 @@ function handleFile(file) {
 
       if (items.length > 0) {
         fullPlaylist.value = items;
-        localStorage.setItem('m3u8-playlist', JSON.stringify(items));
+        await savePlaylist(items);
         videoSrc.value = '';
+        currentPlaying.value = null;
         currentPage.value = 1;
       } else {
         const url = URL.createObjectURL(file);
         m3u8Url.value = url;
-        playVideo();
+        await playVideo();
       }
     };
     reader.readAsText(file);
@@ -107,6 +107,9 @@ function beforeUpload(file) {
 
     <main class="content-area" :class="{ 'has-playlist': fullPlaylist.length > 0 }">
       <div class="player-wrapper">
+        <div v-if="currentPlaying" class="now-playing">
+          正在播放: {{ currentPlaying.title }}
+        </div>
         <div class="player-container">
           <Player v-if="videoSrc" :src="videoSrc" />
           <el-upload
@@ -130,7 +133,7 @@ function beforeUpload(file) {
       <div v-if="fullPlaylist.length > 0" class="playlist-wrapper">
         <el-input v-model="searchQuery" placeholder="搜索..." clearable class="search-input"></el-input>
         <ul class="playlist">
-          <li v-for="item in paginatedPlaylist" :key="item.id" @click="playFromPlaylist(item)">
+          <li v-for="item in paginatedPlaylist" :key="item.id" @click="playFromPlaylist(item)" :class="{ playing: currentPlaying && currentPlaying.id === item.id }">
             {{ item.title }}
           </li>
         </ul>
@@ -182,22 +185,37 @@ function beforeUpload(file) {
   gap: 1rem;
   padding: 1rem;
   flex-grow: 1;
-  overflow: hidden; /* Prevent layout shifts from scrollbars */
+  overflow: hidden;
 }
 
 .player-wrapper {
   min-width: 0;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.now-playing {
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-color-soft);
+  border-radius: 6px 6px 0 0;
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .player-container {
   width: 100%;
   height: 100%;
-  min-height: 250px; /* Minimum height for the player/upload area */
+  min-height: 250px;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
   background-color: #000;
+  flex-grow: 1;
 }
 
 .player-container > :deep(div) {
@@ -275,6 +293,11 @@ function beforeUpload(file) {
   background-color: var(--bg-color-mute);
 }
 
+.playlist li.playing {
+  background-color: #409eff;
+  color: white;
+}
+
 .pagination-container {
   margin-top: 1rem;
   display: flex;
@@ -285,7 +308,7 @@ function beforeUpload(file) {
 @media (min-width: 992px) {
   .content-area.has-playlist {
     grid-template-columns: 3fr 1fr;
-    grid-template-rows: 1fr; /* Ensure items in a row have same height */
+    grid-template-rows: 1fr;
   }
 }
 
