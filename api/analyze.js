@@ -33,11 +33,10 @@ export default async function handler(req, res) {
     if (countError) throw countError;
 
     // 2. Get the favorite video
-    const { data: favoriteVideoData, error: favoriteVideoError } = await supabase
+    const { data: favoriteVideo, error: favoriteVideoError } = await supabase
       .rpc('get_favorite_video_by_ip', { user_ip: ip });
 
     if (favoriteVideoError) throw favoriteVideoError;
-    const favoriteVideo = favoriteVideoData && favoriteVideoData.length > 0 ? favoriteVideoData[0].video_title : null;
 
 
     // 3. Calculate the rank

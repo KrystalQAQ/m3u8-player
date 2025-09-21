@@ -26,10 +26,27 @@
         <el-col :span="8">
           <el-card shadow="hover">
             <div class="stat-title">最常观看视频</div>
-            <div class="stat-value">{{ analysis.favoriteVideo || 'N/A' }}</div>
+            <div class="stat-value">{{ analysis.favoriteVideo?.[0]?.video_title || 'N/A' }}</div>
           </el-card>
         </el-col>
       </el-row>
+      <!-- Top 10 Videos Table -->
+      <el-card shadow="never" class="top-videos-card" v-if="analysis.favoriteVideo && analysis.favoriteVideo.length > 0">
+        <template #header>
+          <div class="card-header">
+            <span>Top 10 最常观看视频</span>
+          </div>
+        </template>
+        <el-table :data="analysis.favoriteVideo" stripe style="width: 100%">
+          <el-table-column prop="video_title" label="视频标题"></el-table-column>
+          <el-table-column prop="play_count" label="观看次数" width="120" align="center"></el-table-column>
+          <el-table-column label="操作" width="120" align="center">
+            <template #default="scope">
+              <el-button size="small" @click="previewVideo(scope.row)">预览</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
     </div>
 
     <div v-if="error" class="error-message">
@@ -228,6 +245,12 @@ export default {
         this.loading = false;
       }
     },
+    previewVideo(video) {
+      this.previewSrc = video.video_src;
+      this.previewTime = 0; // Start from the beginning for previews from analysis
+      this.previewTitle = video.video_title || 'Video Preview';
+      this.dialogVisible = true;
+    },
   },
 };
 </script>
@@ -288,5 +311,9 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.top-videos-card {
+  margin-top: 20px;
 }
 </style>
