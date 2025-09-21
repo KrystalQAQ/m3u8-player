@@ -47,11 +47,36 @@ onMounted(() => {
       },
     });
 
+    let lastLogTime = 0;
+    dp.on('play', () => {
+      logPlayerData('play');
+    });
+
     dp.on('timeupdate', () => {
       if (dp && dp.video.currentTime > 0) {
         emit('timeupdate', dp.video.currentTime);
+        const now = Date.now();
+        if (now - lastLogTime > 60000) { // Log every 60 seconds
+          logPlayerData('timeupdate');
+          lastLogTime = now;
+        }
       }
     });
+
+    const logPlayerData = (event) => {
+      fetch('/api/log', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event: event,
+          src: props.src,
+          currentTime: dp.video.currentTime,
+          userAgent: navigator.userAgent,
+        }),
+      });
+    };
   }
 });
 
