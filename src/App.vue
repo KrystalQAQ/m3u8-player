@@ -12,6 +12,65 @@ const searchQuery = ref('');
 const currentPage = ref(1);
 const pageSize = ref(15);
 const currentPlaying = ref(null); // To track the currently playing item
+const csvFileInput = ref(null);
+const m3u8FileInput = ref(null);
+
+function openCsvFilePicker() {
+  csvFileInput.value.click();
+}
+
+function openM3u8FilePicker() {
+  m3u8FileInput.value.click();
+}
+
+function handleM3u8File(event) {
+  const file = event.target.files[0];
+  if (file) {
+    handleFile(file);
+  }
+  event.target.value = '';
+}
+
+async function handleCsvFile(event) {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const content = e.target.result;
+    const lines = content.split(/\r?\n/);
+    const items = lines
+      .map((line, index) => {
+        const parts = line.split(',');
+        if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
+          return {
+            id: index,
+            title: parts[0].trim(),
+            uri: parts[1].trim(),
+          };
+        }
+        return null;
+      })
+      .filter(item => item !== null);
+
+    if (items.length > 0) {
+      fullPlaylist.value = items;
+      await clearPlaylist();
+      await savePlaylist(items);
+      videoSrc.value = '';
+      currentPlaying.value = null;
+      currentPage.value = 1;
+      ElMessage.success(`成功加载 ${items.length} 个视频`);
+    } else {
+      ElMessage.error('文件格式不正确或内容为空');
+    }
+  };
+  reader.readAsText(file);
+  // Reset file input
+  event.target.value = '';
+}
 
 const filteredPlaylist = computed(() => {
   if (!searchQuery.value) {
@@ -73,6 +132,7 @@ async function handleFile(file) {
 
       if (items.length > 0) {
         fullPlaylist.value = items;
+        await clearPlaylist();
         await savePlaylist(items);
         videoSrc.value = '';
         currentPlaying.value = null;
@@ -102,6 +162,10 @@ function beforeUpload(file) {
       <div class="input-area">
         <el-input v-model="m3u8Url" placeholder="输入 M3U8 地址或拖拽文件到下方区域"></el-input>
         <el-button type="primary" @click="playVideo">播放</el-button>
+        <el-button type="info" @click="openM3u8FilePicker">M3U8模式</el-button>
+        <el-button type="success" @click="openCsvFilePicker">逗号分隔模式</el-button>
+        <input type="file" ref="csvFileInput" @change="handleCsvFile" style="display: none" accept=".txt,.csv" />
+        <input type="file" ref="m3u8FileInput" @change="handleM3u8File" style="display: none" accept=".m3u8,.m3u" />
       </div>
     </header>
 
@@ -112,21 +176,10 @@ function beforeUpload(file) {
         </div>
         <div class="player-container">
           <Player v-if="videoSrc" :src="videoSrc" />
-          <el-upload
-            v-else
-            class="upload-dragger"
-            drag
-            action="#"
-            :before-upload="beforeUpload"
-            :show-file-list="false"
-          >
-            <div class="upload-content">
-              <span class="upload-icon">📺</span>
-              <div class="el-upload__text">
-                将 .m3u8 文件拖到此处，或<em>点击上传</em>
-              </div>
-            </div>
-          </el-upload>
+          <div v-else class="player-placeholder">
+            <span class="placeholder-icon">📺</span>
+            <p>请播放一个视频或上传一个播放列表</p>
+          </div>
         </div>
       </div>
 
@@ -246,14 +299,18 @@ function beforeUpload(file) {
   border-color: #409eff;
 }
 
-.upload-content {
-  text-align: center;
+.player-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   color: #888;
+  background-color: var(--bg-color-soft);
 }
 
-.upload-icon {
+.placeholder-icon {
   font-size: 4rem;
-  display: block;
   margin-bottom: 1rem;
 }
 
