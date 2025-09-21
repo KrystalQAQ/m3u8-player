@@ -12,7 +12,13 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  startTime: {
+    type: Number,
+    default: 0,
+  },
 });
+
+const emit = defineEmits(['timeupdate']);
 
 const playerContainer = ref(null);
 let dp = null;
@@ -21,7 +27,7 @@ onMounted(() => {
   if (playerContainer.value) {
     dp = new DPlayer({
       container: playerContainer.value,
-      autoplay: true, // Add autoplay option
+      autoplay: true,
       video: {
         url: props.src,
         type: 'customHls',
@@ -30,13 +36,21 @@ onMounted(() => {
             const hls = new Hls();
             hls.loadSource(video.src);
             hls.attachMedia(video);
-            // Ensure play is called after hls is attached
-            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+              if (props.startTime > 0) {
+                player.seek(props.startTime);
+              }
               player.play();
             });
           },
         },
       },
+    });
+
+    dp.on('timeupdate', () => {
+      if (dp && dp.video.currentTime > 0) {
+        emit('timeupdate', dp.video.currentTime);
+      }
     });
   }
 });

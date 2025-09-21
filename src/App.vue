@@ -14,6 +14,7 @@ const pageSize = ref(15);
 const currentPlaying = ref(null); // To track the currently playing item
 const csvFileInput = ref(null);
 const m3u8FileInput = ref(null);
+const startTime = ref(0);
 
 function openCsvFilePicker() {
   csvFileInput.value.click();
@@ -92,6 +93,24 @@ onMounted(async () => {
   if (savedPlaylist) {
     fullPlaylist.value = savedPlaylist;
   }
+
+  const savedPlayerState = localStorage.getItem('playerState');
+  if (savedPlayerState) {
+    const { src, time, item } = JSON.parse(savedPlayerState);
+    if (src && time) {
+      videoSrc.value = src;
+      startTime.value = time;
+      if (item) {
+        currentPlaying.value = item;
+      } else {
+        // Try to find the item in the playlist
+        const foundItem = fullPlaylist.value.find(pItem => pItem.uri === src);
+        if (foundItem) {
+          currentPlaying.value = foundItem;
+        }
+      }
+    }
+  }
 });
 
 async function playVideo() {
@@ -104,6 +123,18 @@ async function playVideo() {
 function playFromPlaylist(item) {
   videoSrc.value = item.uri;
   currentPlaying.value = item;
+  startTime.value = 0; // Reset start time when playing a new item
+}
+
+function handleTimeUpdate(time) {
+  if (videoSrc.value) {
+    const state = {
+      src: videoSrc.value,
+      time: time,
+      item: currentPlaying.value
+    };
+    localStorage.setItem('playerState', JSON.stringify(state));
+  }
 }
 
 async function handleFile(file) {
@@ -175,7 +206,7 @@ function beforeUpload(file) {
           正在播放: {{ currentPlaying.title }}
         </div>
         <div class="player-container">
-          <Player v-if="videoSrc" :src="videoSrc" />
+          <Player v-if="videoSrc" :src="videoSrc" :start-time="startTime" @timeupdate="handleTimeUpdate" />
           <div v-else class="player-placeholder">
             <span class="placeholder-icon">📺</span>
             <p>请播放一个视频或上传一个播放列表</p>
