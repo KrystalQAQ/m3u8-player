@@ -206,7 +206,7 @@ function beforeUpload(file) {
           正在播放: {{ currentPlaying.title }}
         </div>
         <div class="player-container">
-          <Player v-if="videoSrc" :src="videoSrc" :start-time="startTime" @timeupdate="handleTimeUpdate" />
+          <Player v-if="videoSrc" :src="videoSrc" :start-time="startTime" :title="currentPlaying ? currentPlaying.title : ''" @timeupdate="handleTimeUpdate" />
           <div v-else class="player-placeholder">
             <span class="placeholder-icon">📺</span>
             <p>请播放一个视频或上传一个播放列表</p>

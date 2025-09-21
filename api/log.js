@@ -37,7 +37,8 @@ export default async (req, res) => {
 
     try {
       const body = await json(req);
-      const { event, src, currentTime, userAgent } = body;
+      // console.log(body);
+      const { event, src, currentTime, userAgent, title } = body;
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
       const { data, error } = await supabase
@@ -48,7 +49,8 @@ export default async (req, res) => {
             user_agent: userAgent,
             event: event,
             video_src: src,
-            current_time: currentTime
+            current_time: currentTime,
+            video_title: title
           },
         ]);
 

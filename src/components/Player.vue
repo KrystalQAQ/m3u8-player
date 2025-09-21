@@ -16,6 +16,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  title: {
+    type: String,
+    default: '',
+  },
 });
 
 const emit = defineEmits(['timeupdate']);
@@ -72,6 +76,7 @@ onMounted(() => {
         body: JSON.stringify({
           event: event,
           src: props.src,
+          title: props.title,
           currentTime: dp.video.currentTime,
           userAgent: navigator.userAgent,
         }),
