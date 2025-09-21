@@ -2,7 +2,7 @@
   <div class="log-viewer-container">
     <h1 class="title">Log Viewer</h1>
     <div class="controls">
-      <el-select v-model="ipFilter" placeholder="Filter by IP Address" clearable
+      <el-select filterable v-model="ipFilter" placeholder="Filter by IP Address" clearable
         style="width: 240px; margin-right: 10px;">
         <el-option v-for="ip in uniqueIps" :key="ip" :label="ip" :value="ip" />
       </el-select>
@@ -37,7 +37,8 @@
         @current-change="handlePageChange" />
     </div>
     <el-dialog v-model="dialogVisible" :title="previewTitle" width="60%" @close="dialogVisible = false">
-      <Player v-if="dialogVisible" :src="previewSrc" :start-time="previewTime" :title="previewTitle" />
+      <Player v-if="dialogVisible" :src="previewSrc" :start-time="previewTime" :title="previewTitle"
+        :is-preview="true" />
     </el-dialog>
   </div>
 </template>

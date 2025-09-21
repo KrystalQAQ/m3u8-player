@@ -20,6 +20,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  isPreview: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['timeupdate']);
@@ -72,6 +76,9 @@ onMounted(() => {
     });
 
     const logPlayerData = (event) => {
+      if (props.isPreview) {
+        return;
+      }
       fetch('/api/log', {
         method: 'POST',
         headers: {
