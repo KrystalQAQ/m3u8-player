@@ -381,5 +381,9 @@ function beforeUpload(file) {
     padding: 0.5rem;
     gap: 0.5rem;
   }
+  .input-area {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
 }
 </style>
