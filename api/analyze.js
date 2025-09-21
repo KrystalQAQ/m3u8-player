@@ -1,11 +1,21 @@
-import { getDb } from '../src/db.js';
+import { createClient } from '@supabase/supabase-js';
+import { URL } from 'url';
+
+const supabaseUrl = 'https://yvvtpuzlsspsufkzdktc.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const password = searchParams.get('pd');
   const ip = searchParams.get('ip');
+  const LOG_PASSWORD = process.env.LOG_PASSWORD;
 
-  if (password !== process.env.PASSWORD) {
+  if (!LOG_PASSWORD) {
+    return res.status(500).json({ error: 'Server is not configured for log viewing.' });
+  }
+
+  if (password !== LOG_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -14,23 +24,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const db = await getDb();
-
     // 1. Get total log count for the IP
-    const totalLogsResult = await db.get('SELECT COUNT(*) as totalLogs FROM logs WHERE ip = ?', ip);
-    const totalLogs = totalLogsResult.totalLogs;
+    const { count: totalLogs, error: countError } = await supabase
+      .from('logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip', ip);
+
+    if (countError) throw countError;
 
     // 2. Get the favorite video
-    const favoriteVideoResult = await db.get(
-      "SELECT video_title FROM logs WHERE ip = ? AND event = 'seeking' AND video_title IS NOT NULL GROUP BY video_title ORDER BY COUNT(*) DESC LIMIT 1",
-      ip
-    );
-    const favoriteVideo = favoriteVideoResult ? favoriteVideoResult.video_title : null;
+    const { data: favoriteVideoData, error: favoriteVideoError } = await supabase
+      .rpc('get_favorite_video_by_ip', { user_ip: ip });
+
+    if (favoriteVideoError) throw favoriteVideoError;
+    const favoriteVideo = favoriteVideoData && favoriteVideoData.length > 0 ? favoriteVideoData[0].video_title : null;
+
 
     // 3. Calculate the rank
-    const ipCounts = await db.all('SELECT ip, COUNT(*) as count FROM logs GROUP BY ip ORDER BY count DESC');
-    const rank = ipCounts.findIndex(item => item.ip === ip) + 1;
+    const { data: ipCounts, error: ipCountsError } = await supabase.rpc('get_ip_log_counts');
+    if (ipCountsError) throw ipCountsError;
 
+    const rank = ipCounts.findIndex(item => item.ip === ip) + 1;
 
     res.status(200).json({
       totalLogs,
@@ -39,6 +53,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error fetching user analysis:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
