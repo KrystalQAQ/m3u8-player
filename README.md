@@ -46,7 +46,7 @@
 
 你可以轻松地将此项目一键部署到 Vercel。
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2F<your-github-username>%2Fm3u8-player)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/KrystalQAQ/m3u8-player)
 
 ### 手动部署步骤
 
