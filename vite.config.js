@@ -12,6 +12,7 @@ export default defineConfig({
     }),
   ],
   server: {
+    port: 10801,
     proxy: {
       '/api': {
         target: 'https://m3u8-player.krystal.fit',

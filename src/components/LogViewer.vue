@@ -32,11 +32,21 @@
               <span>播放次数最多的20个视频</span>
             </template>
             <el-table :data="overallAnalysis.topVideos" stripe>
-              <el-table-column prop="video_title" label="视频标题"></el-table-column>
-              <el-table-column prop="play_count" label="播放次数" width="120" align="center"></el-table-column>
+              <el-table-column
+                prop="video_title"
+                label="视频标题"
+              ></el-table-column>
+              <el-table-column
+                prop="play_count"
+                label="播放次数"
+                width="120"
+                align="center"
+              ></el-table-column>
               <el-table-column label="操作" width="120" align="center">
                 <template #default="scope">
-                  <el-button size="small" @click="previewVideo(scope.row)">预览</el-button>
+                  <el-button size="small" @click="previewVideo(scope.row)"
+                    >预览</el-button
+                  >
                 </template>
               </el-table-column>
             </el-table>
@@ -47,8 +57,18 @@
       <!-- 用户分析 Tab -->
       <el-tab-pane label="用户分析" name="user">
         <div class="controls">
-          <el-select filterable v-model="ipFilter" placeholder="选择IP进行用户分析" clearable>
-            <el-option v-for="ip in uniqueIps" :key="ip" :label="ip" :value="ip" />
+          <el-select
+            filterable
+            v-model="ipFilter"
+            placeholder="选择IP进行用户分析"
+            clearable
+          >
+            <el-option
+              v-for="ip in uniqueIps"
+              :key="ip"
+              :label="ip"
+              :value="ip"
+            />
           </el-select>
         </div>
         <div v-if="loading" v-loading="loading" class="loading-spinner"></div>
@@ -69,57 +89,121 @@
             <el-col :span="8">
               <el-card shadow="hover">
                 <div class="stat-title">最常观看视频</div>
-                <div class="stat-value">{{ userAnalysis.favoriteVideo?.[0]?.video_title || 'N/A' }}</div>
+                <div class="stat-value">
+                  {{ userAnalysis.favoriteVideo?.[0]?.video_title || "N/A" }}
+                </div>
               </el-card>
             </el-col>
           </el-row>
-          <el-card shadow="never" class="top-videos-card" v-if="userAnalysis.favoriteVideo && userAnalysis.favoriteVideo.length > 0">
+          <el-card
+            shadow="never"
+            class="top-videos-card"
+            v-if="
+              userAnalysis.favoriteVideo &&
+              userAnalysis.favoriteVideo.length > 0
+            "
+          >
             <template #header>
               <span>Top 10 最常观看视频</span>
             </template>
             <el-table :data="userAnalysis.favoriteVideo" stripe>
-              <el-table-column prop="video_title" label="视频标题"></el-table-column>
-              <el-table-column prop="play_count" label="观看次数" width="120" align="center"></el-table-column>
+              <el-table-column
+                prop="video_title"
+                label="视频标题"
+              ></el-table-column>
+              <el-table-column
+                prop="play_count"
+                label="观看次数"
+                width="120"
+                align="center"
+              ></el-table-column>
               <el-table-column label="操作" width="120" align="center">
                 <template #default="scope">
-                  <el-button size="small" @click="previewVideo(scope.row)">预览</el-button>
+                  <el-button size="small" @click="previewVideo(scope.row)"
+                    >预览</el-button
+                  >
                 </template>
               </el-table-column>
             </el-table>
           </el-card>
         </div>
-        <el-empty v-if="!ipFilter" description="请选择一个IP地址进行分析"></el-empty>
+        <el-empty
+          v-if="!ipFilter"
+          description="请选择一个IP地址进行分析"
+        ></el-empty>
       </el-tab-pane>
 
       <!-- 实时数据 Tab -->
       <el-tab-pane label="实时数据" name="logs">
         <div class="controls">
-          <el-select filterable v-model="ipTableFilter" placeholder="筛选表格中的IP地址" clearable>
-            <el-option v-for="ip in uniqueIps" :key="ip" :label="ip" :value="ip" />
+          <el-select
+            filterable
+            v-model="ipTableFilter"
+            placeholder="筛选表格中的IP地址"
+            clearable
+          >
+            <el-option
+              v-for="ip in uniqueIps"
+              :key="ip"
+              :label="ip"
+              :value="ip"
+            />
           </el-select>
         </div>
         <div v-if="loading" v-loading="loading" class="loading-spinner"></div>
-        <el-table v-if="!loading && logs?.length > 0" :data="logs" stripe border>
+        <el-table
+          v-if="!loading && logs?.length > 0"
+          :data="logs"
+          stripe
+          border
+        >
           <el-table-column prop="created_at" label="Timestamp" width="180">
-            <template #default="scope">{{ new Date(scope.row.created_at).toLocaleString() }}</template>
+            <template #default="scope">{{
+              new Date(scope.row.created_at).toLocaleString()
+            }}</template>
           </el-table-column>
           <el-table-column prop="event" label="Event" width="120" />
-          <el-table-column prop="ip" label="IP Address" width="150" />
+          <el-table-column prop="ip" label="IP Address" width="250">
+            <template #default="scope">
+              <div>{{ scope.row.ip }}</div>
+              <small>{{ ipLocationCache[scope.row.ip] }}</small>
+            </template>
+          </el-table-column>
           <el-table-column prop="video_title" label="Video Title" />
-          <el-table-column prop="current_time" label="Current Time" width="120" />
+          <el-table-column
+            prop="current_time"
+            label="Current Time"
+            width="120"
+          />
+          <el-table-column prop="user_agent" label="user_agent" width="200">
+            <template #default="scope">
+              <div>{{ getagent(scope.row.user_agent) }}</div>
+            </template>
+          </el-table-column>
           <el-table-column label="Actions" width="120">
             <template #default="scope">
-              <el-button size="small" @click="viewInPlayer(scope.row)">View</el-button>
+              <el-button size="small" @click="viewInPlayer(scope.row)"
+                >View</el-button
+              >
             </template>
           </el-table-column>
         </el-table>
-        <div v-if="!loading && logs?.length === 0 && attempted" class="no-logs-message">
+        <div
+          v-if="!loading && logs?.length === 0 && attempted"
+          class="no-logs-message"
+        >
           <el-empty description="没有找到日志"></el-empty>
         </div>
         <div v-if="!loading && total > 0" class="pagination-container">
-          <el-pagination :current-page="currentPage" :page-sizes="[10, 20, 50, 100]" :page-size="pageSize" :total="total"
-            layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange"
-            @current-change="handlePageChange" />
+          <el-pagination
+            :current-page="currentPage"
+            :page-sizes="[10, 20, 50, 100]"
+            :page-size="pageSize"
+            :total="total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -128,15 +212,26 @@
       <el-alert :title="error" type="error" show-icon :closable="false" />
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="previewTitle" width="60%" @close="dialogVisible = false">
-      <Player v-if="dialogVisible" :src="previewSrc" :start-time="previewTime" :title="previewTitle" :is-preview="true" />
+    <el-dialog
+      v-model="dialogVisible"
+      :title="previewTitle"
+      width="60%"
+      @close="dialogVisible = false"
+    >
+      <Player
+        v-if="dialogVisible"
+        :src="previewSrc"
+        :start-time="previewTime"
+        :title="previewTitle"
+        :is-preview="true"
+      />
     </el-dialog>
   </div>
 </template>
 
 <script>
-import Player from './Player.vue';
-
+import Player from "./Player.vue";
+import useragent from "@financial-times/useragent_parser";
 export default {
   components: { Player },
   data() {
@@ -149,23 +244,24 @@ export default {
       pageSize: 20,
       total: 0,
       dialogVisible: false,
-      previewSrc: '',
+      previewSrc: "",
       previewTime: 0,
-      previewTitle: 'Video Preview',
+      previewTitle: "Video Preview",
       pollingInterval: null,
       uniqueIps: [],
-      
-      activeTab: 'overall', // Default tab
-      
+
+      activeTab: "overall", // Default tab
+
       // Tab: Overall Analysis
       overallAnalysis: null,
 
       // Tab: User Analysis
-      ipFilter: '', // For user analysis selection
+      ipFilter: "", // For user analysis selection
       userAnalysis: null,
 
       // Tab: Real-time Data
-      ipTableFilter: '', // For filtering the log table
+      ipTableFilter: "", // For filtering the log table
+      ipLocationCache: {},
     };
   },
   watch: {
@@ -182,12 +278,12 @@ export default {
     },
     activeTab(newTab, oldTab) {
       // Clear polling interval when leaving the logs tab
-      if (oldTab === 'logs' && this.pollingInterval) {
+      if (oldTab === "logs" && this.pollingInterval) {
         clearInterval(this.pollingInterval);
         this.pollingInterval = null;
       }
       this.loadDataForCurrentTab();
-    }
+    },
   },
   mounted() {
     this.fetchUniqueIps();
@@ -197,25 +293,29 @@ export default {
     clearInterval(this.pollingInterval);
   },
   methods: {
+    getagent(ua) {
+      // console.log();
+      return useragent(ua).family;
+    },
     handleTabClick() {
       this.loadDataForCurrentTab();
     },
     loadDataForCurrentTab() {
       this.error = null;
-      
+
       // Stop any existing polling before switching
       if (this.pollingInterval) {
         clearInterval(this.pollingInterval);
         this.pollingInterval = null;
       }
 
-      if (this.activeTab === 'overall') {
+      if (this.activeTab === "overall") {
         this.fetchOverallAnalysis();
-      } else if (this.activeTab === 'user') {
+      } else if (this.activeTab === "user") {
         if (this.ipFilter) {
           this.fetchUserAnalysis(this.ipFilter);
         }
-      } else if (this.activeTab === 'logs') {
+      } else if (this.activeTab === "logs") {
         this.fetchLogs(true);
         // Only start polling if we are on the logs tab
         this.pollingInterval = setInterval(() => this.fetchLogs(false), 5000);
@@ -224,15 +324,16 @@ export default {
     async fetchApi(endpoint, params, isInitialLoad = false) {
       if (isInitialLoad) this.loading = true;
       this.error = null;
-      
+
       const password = this.$route.query.pd;
       if (!password) {
-        this.error = 'Password is required. Please provide it in the URL query parameter "pd".';
+        this.error =
+          'Password is required. Please provide it in the URL query parameter "pd".';
         this.loading = false;
         return null;
       }
-      
-      params.set('pd', password);
+
+      params.set("pd", password);
 
       try {
         const response = await fetch(`/api/${endpoint}?${params.toString()}`);
@@ -249,14 +350,14 @@ export default {
       }
     },
     async fetchOverallAnalysis() {
-      const data = await this.fetchApi('overall', new URLSearchParams(), true);
+      const data = await this.fetchApi("overall", new URLSearchParams(), true);
       if (data) {
         this.overallAnalysis = data;
       }
     },
     async fetchUserAnalysis(ip) {
       const params = new URLSearchParams({ ip });
-      const data = await this.fetchApi('analyze', params, true);
+      const data = await this.fetchApi("analyze", params, true);
       if (data) {
         this.userAnalysis = data;
       }
@@ -268,29 +369,33 @@ export default {
         pageSize: this.pageSize,
       });
       if (this.ipTableFilter) {
-        params.append('ip', this.ipTableFilter);
+        params.append("ip", this.ipTableFilter);
       }
-      
+
       // Use a modified fetch logic for logs to handle polling without constant loading spinners
       if (isInitialLoad) this.loading = true;
       this.error = null;
       const password = this.$route.query.pd;
       if (!password) {
-        this.error = 'Password is required.';
+        this.error = "Password is required.";
         this.loading = false;
         return;
       }
-      params.set('pd', password);
+      params.set("pd", password);
 
       try {
         const response = await fetch(`/api/log?${params.toString()}`);
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch logs');
+          throw new Error(errorData.error || "Failed to fetch logs");
         }
         const { data, count } = await response.json();
         this.logs = data;
         this.total = count;
+        if (data && data.length > 0) {
+          const ips = [...new Set(data.map((log) => log.ip))];
+          this.fetchIpLocations(ips);
+        }
       } catch (err) {
         this.error = err.message;
       } finally {
@@ -301,11 +406,13 @@ export default {
       const password = this.$route.query.pd;
       if (!password) return;
       try {
-        const response = await fetch(`/api/ips?pd=${encodeURIComponent(password)}`);
-        if (!response.ok) throw new Error('Failed to fetch unique IPs');
+        const response = await fetch(
+          `/api/ips?pd=${encodeURIComponent(password)}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch unique IPs");
         this.uniqueIps = await response.json();
       } catch (err) {
-        console.error('Error fetching unique IPs:', err);
+        console.error("Error fetching unique IPs:", err);
       }
     },
     handlePageChange(newPage) {
@@ -320,14 +427,47 @@ export default {
     viewInPlayer(row) {
       this.previewSrc = row.video_src;
       this.previewTime = row.current_time;
-      this.previewTitle = row.video_title || 'Video Preview';
+      this.previewTitle = row.video_title || "Video Preview";
       this.dialogVisible = true;
     },
     previewVideo(video) {
       this.previewSrc = video.video_src;
       this.previewTime = 0;
-      this.previewTitle = video.video_title || 'Video Preview';
+      this.previewTitle = video.video_title || "Video Preview";
       this.dialogVisible = true;
+    },
+
+    async fetchIpLocations(ips) {
+      for (const ip of ips) {
+        if (this.ipLocationCache[ip]) continue;
+
+        this.ipLocationCache[ip] = "Loading...";
+        try {
+          const response = await fetch(
+            `https://gps.boomboomboom.com.cn/api/ip-loc?ip=${ip}`
+          );
+          if (response.ok) {
+            const locationData = await response.json();
+            if (locationData && locationData.data) {
+              const { country, province, city } = locationData.data.rgeo;
+              console.log(country, province, city);
+
+              const locationString = [country, province, city]
+                .filter(Boolean)
+                .join(" ");
+              this.ipLocationCache[ip] =
+                locationString || "Location details not available";
+            } else {
+              this.ipLocationCache[ip] = "Location not found";
+            }
+          } else {
+            this.ipLocationCache[ip] = "N/A";
+          }
+        } catch (error) {
+          console.error(`Failed to fetch location for IP ${ip}:`, error);
+          this.ipLocationCache[ip] = "Error";
+        }
+      }
     },
   },
 };

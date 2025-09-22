@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@financial-times/useragent_parser':
+        specifier: ^1.6.3
+        version: 1.6.3
       '@supabase/supabase-js':
         specifier: ^2.57.4
         version: 2.57.4
@@ -230,6 +233,9 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@financial-times/useragent_parser@1.6.3':
+    resolution: {integrity: sha512-TlQiXt/vS5ZwY0V3salvlyQzIzMGZEyw9inmJA25A8heL2kBVENbToiEc64R6ETNf5YHa2lwnc2I7iNHP9SqeQ==}
 
   '@floating-ui/core@1.7.3':
     resolution: {integrity: sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w==}
@@ -874,6 +880,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.10':
     optional: true
+
+  '@financial-times/useragent_parser@1.6.3': {}
 
   '@floating-ui/core@1.7.3':
     dependencies:

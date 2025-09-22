@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@financial-times/useragent_parser": "^1.6.3",
     "@supabase/supabase-js": "^2.57.4",
     "dexie": "^4.2.0",
     "dplayer": "^1.27.1",
