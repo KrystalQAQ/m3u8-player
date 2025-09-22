@@ -2,6 +2,10 @@
 
 这是一个使用 Vue 3 + Vite 构建的在线 M3U8 播放器。它利用 hls.js 和 DPlayer 提供了强大的视频播放功能，并集成了 Supabase 作为后端服务。
 
+## 🌐 在线体验
+
+[https://m3u8-player.krystal.fit/](https://m3u8-player.krystal.fit/)
+
 ## ✨ 功能特性
 
 - 支持 M3U8 格式的流媒体播放。
@@ -23,7 +27,7 @@
 
 1.  **克隆仓库**
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/KrystalQAQ/m3u8-player
     cd m3u8-player
     ```
 
