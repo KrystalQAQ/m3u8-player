@@ -51,6 +51,9 @@
               </el-table-column>
             </el-table>
           </el-card>
+          <el-button @click="exportVideos" type="primary" style="margin-top: 20px;"
+            >导出视频</el-button
+          >
         </div>
       </el-tab-pane>
 
@@ -469,6 +472,28 @@ export default {
         }
       }
     },
+   async exportVideos() {
+     const password = this.$route.query.pd;
+     if (!password) {
+       this.error = 'Password is required for export.';
+       return;
+     }
+     try {
+       const response = await fetch(`/api/overall?pd=${password}&export=true`);
+       if (!response.ok) {
+         throw new Error('Failed to export videos.');
+       }
+       const blob = await response.blob();
+       const link = document.createElement('a');
+       link.href = URL.createObjectURL(blob);
+       link.download = 'videos.csv';
+       document.body.appendChild(link);
+       link.click();
+       document.body.removeChild(link);
+     } catch (err) {
+       this.error = err.message;
+     }
+   },
   },
 };
 </script>
