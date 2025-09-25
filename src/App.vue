@@ -4,7 +4,8 @@ import Player from './components/Player.vue';
 import { Parser } from 'm3u8-parser';
 import { ElMessage } from 'element-plus';
 import { savePlaylist, loadPlaylist, clearPlaylist } from './db';
-
+import { inject } from "@vercel/analytics"
+inject()
 const m3u8Url = ref('');
 const videoSrc = ref('');
 const fullPlaylist = ref([]);
