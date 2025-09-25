@@ -8,6 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export default async function handler(req, res) {
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const password = searchParams.get('pd');
+  const shouldExport = searchParams.get('export') === 'true';
   const LOG_PASSWORD = process.env.LOG_PASSWORD;
 
   if (!LOG_PASSWORD) {
@@ -19,21 +20,43 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { data, error } = await supabase.rpc('get_overall_analysis');
+    if (shouldExport) {
+      // Export logic
+      const { data, error } = await supabase
+        .from('logs')
+        .select('video_title, video_src')
+        .not('video_title', 'is', null)
+        .not('video_src', 'is', null);
 
-    if (error) {
-      throw error;
-    }
+      if (error) throw error;
 
-    // The RPC function returns a single JSON object.
-    if (data) {
-      res.status(200).json(data);
+      const uniqueVideos = Array.from(new Map(data.map(item => [item.video_src, item])).values());
+
+      let csv = '名称,链接\n';
+      uniqueVideos.forEach(row => {
+        csv += `"${row.video_title.replace(/"/g, '""')}","${row.video_src}"\n`;
+      });
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="videos.csv"');
+      res.status(200).send(csv);
+
     } else {
-      throw new Error('No analysis data returned from the database function.');
-    }
+      // Overall analysis logic
+      const { data, error } = await supabase.rpc('get_overall_analysis');
 
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        res.status(200).json(data);
+      } else {
+        throw new Error('No analysis data returned from the database function.');
+      }
+    }
   } catch (error) {
-    console.error('Error fetching overall analysis:', error);
+    console.error('Error in overall API:', error);
     res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
