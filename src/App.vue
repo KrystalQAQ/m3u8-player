@@ -5,6 +5,9 @@ import { Parser } from 'm3u8-parser';
 import { ElMessage } from 'element-plus';
 import { savePlaylist, loadPlaylist, clearPlaylist } from './db';
 import { inject } from "@vercel/analytics"
+import { injectSpeedInsights } from '@vercel/speed-insights';
+
+injectSpeedInsights();
 inject()
 const m3u8Url = ref('');
 const videoSrc = ref('');
